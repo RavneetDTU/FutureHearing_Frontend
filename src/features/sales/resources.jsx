@@ -1,0 +1,151 @@
+import { col, statusField, statusFilter } from '../../components/resource/columns';
+import { StatusBadge } from '../../components/ui';
+import { optionLabel } from '../../config/statuses';
+import { formatCurrency, formatDate } from '../../utils/format';
+
+export const fullTestsConfig = {
+  resource: 'fullTests',
+  title: 'Full Tests',
+  singular: 'Full Test',
+  eyebrow: 'Sales',
+  description: 'Predefined groups of service products that can be added to an invoice together.',
+  permissions: { create: 'invoices.create', edit: 'invoices.edit', delete: 'invoices.edit' },
+  columns: [
+    col.strong('name', 'Template'),
+    col.text('description', 'Description', { sortable: false }),
+    { key: 'services', header: 'Services', render: (r) => r.services?.length ?? 0, align: 'right' },
+    col.currency('price', 'Price'),
+    col.status(),
+  ],
+  filters: [statusFilter()],
+  fields: [
+    { name: 'name', label: 'Template name', required: true, span: 12 },
+    { name: 'description', label: 'Description', type: 'textarea', rows: 2, span: 12 },
+    { name: 'defaultIcdCodeIds', label: 'Default ICD-10 codes', type: 'multiselect', options: { resource: 'icdCodes' }, span: 12 },
+    {
+      name: 'serviceProductIds',
+      label: 'Included services',
+      type: 'multiselect',
+      required: true,
+      options: { resource: 'products', params: { type: 'service', status: 'active' } },
+      span: 12,
+      hint: 'These service products are added together when the Full Test is used on an invoice.',
+    },
+    statusField(),
+  ],
+  defaultValues: { status: 'active', defaultIcdCodeIds: [], serviceProductIds: [] },
+  toFormValues: (r) => ({ ...r, serviceProductIds: (r.services ?? []).map((s) => s.productId) }),
+  toPayload: (v) => ({
+    name: v.name,
+    description: v.description || null,
+    defaultIcdCodeIds: v.defaultIcdCodeIds ?? [],
+    status: v.status,
+    services: (v.serviceProductIds ?? []).map((productId) => ({ productId })),
+  }),
+  formSize: 'md',
+  viewItems: (r) => [
+    { label: 'Description', value: r.description },
+    { label: 'Services', value: (r.services ?? []).map((s) => s.productName).join(', ') },
+    { label: 'Price', value: formatCurrency(r.price) },
+    { label: 'Status', value: <StatusBadge value={r.status} /> },
+  ],
+};
+
+const invoiceField = { name: 'invoiceId', label: 'Invoice', type: 'async', resource: 'invoices', labelField: 'invoiceNumber', required: true, params: { type: 'invoice' }, getMeta: (r) => r.patientName };
+
+export const paymentsConfig = {
+  resource: 'payments',
+  title: 'Payments',
+  singular: 'Payment',
+  eyebrow: 'Sales',
+  description: 'Payments received against invoices, including medical aid remittances.',
+  permissions: { create: 'payments.create', edit: 'payments.approve', delete: 'payments.approve' },
+  defaultSort: { sortBy: 'date', sortDir: 'desc' },
+  columns: [
+    col.strong('number', 'Payment'),
+    col.link('patientName', 'Patient', (r) => `/patients/${r.patientId}`),
+    col.link('invoiceNumber', 'Invoice', (r) => `/invoices/${r.invoiceId}`),
+    col.date('date', 'Date'),
+    { key: 'method', header: 'Method', sortable: true, render: (r) => optionLabel('paymentMethod', r.method) },
+    col.currency('amount', 'Amount'),
+    col.status('payment'),
+  ],
+  filters: [
+    { key: 'method', label: 'Methods', options: 'paymentMethod' },
+    { key: 'status', label: 'Statuses', options: { status: 'payment' } },
+  ],
+  fields: [
+    { ...invoiceField, span: 12 },
+    { name: 'amount', label: 'Amount', type: 'currency', required: true, min: 0.01 },
+    { name: 'method', label: 'Method', type: 'select', required: true, options: 'paymentMethod' },
+    { name: 'date', label: 'Date', type: 'date', required: true },
+    { name: 'reference', label: 'Reference' },
+    { name: 'status', label: 'Status', type: 'select', required: true, options: { status: 'payment' } },
+  ],
+  defaultValues: { status: 'completed', method: 'card' },
+  toPayload: (v) => ({
+    invoiceId: v.invoiceId,
+    amount: Number(v.amount),
+    method: v.method,
+    date: v.date || null,
+    reference: v.reference || null,
+    status: v.status || null,
+  }),
+  formSize: 'md',
+  viewItems: (r) => [
+    { label: 'Patient', value: r.patientName },
+    { label: 'Invoice', value: r.invoiceNumber },
+    { label: 'Date', value: formatDate(r.date) },
+    { label: 'Method', value: optionLabel('paymentMethod', r.method) },
+    { label: 'Amount', value: formatCurrency(r.amount) },
+    { label: 'Reference', value: r.reference },
+    { label: 'Status', value: <StatusBadge domain="payment" value={r.status} /> },
+  ],
+};
+
+export const refundsConfig = {
+  resource: 'refunds',
+  title: 'Refunds',
+  singular: 'Refund',
+  eyebrow: 'Sales',
+  description: 'Refund requests and processed refunds against invoices.',
+  permissions: paymentsConfig.permissions,
+  defaultSort: { sortBy: 'date', sortDir: 'desc' },
+  columns: [
+    col.strong('number', 'Refund'),
+    col.link('patientName', 'Patient', (r) => `/patients/${r.patientId}`),
+    col.link('invoiceNumber', 'Invoice', (r) => `/invoices/${r.invoiceId}`),
+    col.date('date', 'Date'),
+    col.text('reason', 'Reason'),
+    col.currency('amount', 'Amount'),
+    col.status('refund'),
+  ],
+  filters: [{ key: 'status', label: 'Statuses', options: { status: 'refund' } }],
+  fields: [
+    { ...invoiceField, span: 12 },
+    { name: 'amount', label: 'Refund amount', type: 'currency', required: true, min: 0.01 },
+    { name: 'method', label: 'Refund method', type: 'select', required: true, options: 'paymentMethod' },
+    { name: 'date', label: 'Date', type: 'date', required: true },
+    { name: 'status', label: 'Status', type: 'select', required: true, options: { status: 'refund' } },
+    { name: 'reason', label: 'Reason', type: 'textarea', required: true, rows: 3, span: 12 },
+  ],
+  defaultValues: { status: 'requested', method: 'eft' },
+  toPayload: (v) => ({
+    invoiceId: v.invoiceId,
+    amount: Number(v.amount),
+    method: v.method,
+    date: v.date || null,
+    reason: v.reason,
+    status: v.status,
+  }),
+  formSize: 'md',
+  viewItems: (r) => [
+    { label: 'Patient', value: r.patientName },
+    { label: 'Invoice', value: r.invoiceNumber },
+    { label: 'Date', value: formatDate(r.date) },
+    { label: 'Amount', value: formatCurrency(r.amount) },
+    { label: 'Method', value: optionLabel('paymentMethod', r.method) },
+    { label: 'Reason', value: r.reason },
+    { label: 'Status', value: <StatusBadge domain="refund" value={r.status} /> },
+  ],
+};

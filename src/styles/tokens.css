@@ -1,0 +1,85 @@
+:root {
+  /* Brand */
+  --brand-50: #fff1f3;
+  --brand-100: #fde8ed;
+  --brand-200: #f9c4cf;
+  --brand-500: #e0264a;
+  --brand-600: #d20b32;
+  --brand-700: #b00929;
+  --brand-800: #8c0720;
+
+  /* Neutrals */
+  --gray-0: #ffffff;
+  --gray-25: #fcfcfc;
+  --gray-50: #f7f7f7;
+  --gray-100: #f0f0f0;
+  --gray-200: #e6e6e6;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #3d3d3d;
+  --gray-800: #262626;
+  --gray-900: #171717;
+
+  /* Semantic */
+  --color-bg: var(--gray-50);
+  --color-surface: var(--gray-0);
+  --color-surface-muted: var(--gray-25);
+  --color-border: var(--gray-200);
+  --color-border-strong: var(--gray-300);
+  --color-text: var(--gray-800);
+  --color-text-muted: var(--gray-500);
+  --color-text-subtle: var(--gray-400);
+  --color-primary: var(--brand-600);
+  --color-primary-hover: var(--brand-700);
+  --color-primary-soft: var(--brand-100);
+  --color-focus: rgba(210, 11, 50, 0.22);
+
+  --tone-neutral-fg: #525252;
+  --tone-neutral-bg: #f0f0f0;
+  --tone-info-fg: #1d5fbf;
+  --tone-info-bg: #e8f0fd;
+  --tone-success-fg: #127045;
+  --tone-success-bg: #e5f6ed;
+  --tone-warning-fg: #9a5800;
+  --tone-warning-bg: #fef2df;
+  --tone-danger-fg: #b42318;
+  --tone-danger-bg: #fdeceb;
+  --tone-brand-fg: var(--brand-700);
+  --tone-brand-bg: var(--brand-100);
+  --tone-purple-fg: #6b3fc4;
+  --tone-purple-bg: #f1ebfd;
+
+  /* Typography */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  /* Spacing / radii / shadows */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --shadow-sm: 0 1px 2px rgba(16, 16, 16, 0.04);
+  --shadow-md: 0 4px 16px rgba(16, 16, 16, 0.06);
+  --shadow-lg: 0 18px 48px rgba(16, 16, 16, 0.16);
+
+  --sidebar-width: 272px;
+  --sidebar-collapsed-width: 76px;
+  --header-height: 68px;
+  --transition: 160ms ease;
+}
