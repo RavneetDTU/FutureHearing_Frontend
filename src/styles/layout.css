@@ -210,15 +210,6 @@
   padding: var(--space-6);
 }
 
-.mock-banner {
-  font-size: var(--text-xs);
-  text-align: center;
-  padding: 4px 8px;
-  background: var(--tone-warning-bg);
-  color: var(--tone-warning-fg);
-  border-bottom: 1px solid #f6dfb6;
-}
-
 @media (max-width: 960px) {
   .app-sidebar {
     transform: translateX(-100%);

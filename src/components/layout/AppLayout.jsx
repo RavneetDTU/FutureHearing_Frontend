@@ -1,7 +1,6 @@
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, ScrollRestoration, useLocation } from 'react-router-dom';
-import { USE_MOCK_API } from '../../api/config';
 import { useSession } from '../../context/SessionContext';
 import { LoadingState } from '../ui';
 import { Header } from './Header';
@@ -20,7 +19,7 @@ export function AppLayout() {
     else setCollapsed((c) => !c);
   };
 
-  if (!USE_MOCK_API && loading) {
+  if (loading) {
     return (
       <div className="auth-page">
         <LoadingState message="Signing you in…" />
@@ -28,7 +27,7 @@ export function AppLayout() {
     );
   }
 
-  if (!USE_MOCK_API && !user && error && error.status !== 401) {
+  if (!user && error && error.status !== 401) {
     return (
       <div className="auth-page">
         <LoadingState message="Unable to reach the server." />
@@ -39,7 +38,7 @@ export function AppLayout() {
     );
   }
 
-  if (!USE_MOCK_API && !user) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -48,12 +47,6 @@ export function AppLayout() {
       <Sidebar onNavigate={() => setMobileOpen(false)} />
       <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />
       <div className="app-main">
-        {USE_MOCK_API && (
-          <div className="mock-banner no-print">
-            Development preview — showing temporary mock data. Changes are not saved. Set VITE_API_BASE_URL to connect the
-            backend.
-          </div>
-        )}
         <Header onToggleSidebar={toggle} />
         <main className="app-content">
           <Outlet />

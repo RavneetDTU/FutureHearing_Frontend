@@ -1,7 +1,6 @@
 import { LogIn } from 'lucide-react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { authApi } from '../../api';
-import { USE_MOCK_API } from '../../api/config';
 import { LogoMark } from '../../components/layout/Logo';
 import { Alert, Button, FormField, Input } from '../../components/ui';
 import { useSession } from '../../context/SessionContext';
@@ -53,7 +52,6 @@ export function LoginPage() {
         <p className="muted" style={{ margin: 0 }}>
           Sign in to manage patients, sales, stock and medical aid claims.
         </p>
-        {USE_MOCK_API && <Alert tone="info">Using in-memory mock data. Any credentials will sign you in.</Alert>}
         {error && <Alert tone="danger">{error.status === 401 ? 'Incorrect username or password.' : error.message}</Alert>}
         <FormField label="Username or email" required error={form.errors.username}>
           {({ id }) => (

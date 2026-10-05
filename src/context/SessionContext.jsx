@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../api';
-import { USE_MOCK_API } from '../api/config';
 import { setAuthToken, setUnauthorizedHandler } from '../api/client';
 import { useApiQuery } from '../hooks/useApiQuery';
 
@@ -58,7 +57,7 @@ export function SessionProvider({ children }) {
     [user],
   );
 
-  const signedOut = !USE_MOCK_API && !user && error?.status === 401;
+  const signedOut = !user && error?.status === 401;
   const value = useMemo(
     () => ({
       user: signedOut ? null : user,
