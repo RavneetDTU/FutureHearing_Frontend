@@ -1,6 +1,12 @@
 {
   "rewrites": [
-    { "source": "/v1/:path*", "destination": "/api/proxy/v1/:path*" },
-    { "source": "/health", "destination": "/api/proxy/health" }
+    {
+      "source": "/v1/:path*",
+      "destination": "http://103.55.104.142%3A5035/v1/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "http://103.55.104.142%3A5035/health"
+    }
   ]
 }
