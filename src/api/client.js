@@ -1,13 +1,14 @@
 import { API_BASE_URL } from './config';
 
 export class ApiError extends Error {
-  constructor(message, { status, code, fieldErrors } = {}) {
+  constructor(message, { status, code, fieldErrors, payload } = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     /** Map of field name -> message, used by forms to display server validation. */
     this.fieldErrors = fieldErrors || {};
+    this.payload = payload ?? null;
   }
 }
 
@@ -67,7 +68,16 @@ function errorMessage(payload, status) {
   return `Request failed (${status})`;
 }
 
+function pendingAccessPayload(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  const body = payload.data && typeof payload.data === 'object' && !Array.isArray(payload.data) ? payload.data : payload;
+  if (body.access === 'pending') return body;
+  if (body.requestId && !body.token && !body.user) return body;
+  return null;
+}
+
 function captureToken(payload) {
+  if (pendingAccessPayload(payload)) return;
   const token = payload?.data?.token ?? payload?.token;
   if (token) setAuthToken(token);
 }
@@ -123,6 +133,7 @@ export async function request(path, { method = 'GET', params, body, headers = {}
         status: response.status,
         code: payload?.code,
         fieldErrors: fieldErrorsFrom(payload),
+        payload,
       });
     }
     return response;
@@ -138,6 +149,7 @@ export async function request(path, { method = 'GET', params, body, headers = {}
       status: response.status,
       code: payload?.code,
       fieldErrors: fieldErrorsFrom(payload),
+      payload,
     });
   }
   captureToken(payload);

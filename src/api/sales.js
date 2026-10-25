@@ -1,5 +1,5 @@
 import { downloadFile, http } from './client';
-import { createResource, endpoint, normalizeArray } from './resource';
+import { createResource, endpoint, normalizeArray, normalizeList } from './resource';
 
 /**
  * POST /invoices with `type: 'quote' | 'proforma' | 'invoice'`. Creating a final invoice may be rejected
@@ -25,4 +25,14 @@ export const refundsApi = createResource('/refunds');
 export const purchasesApi = {
   ...createResource('/purchases'),
   complete: endpoint((id) => http.post(`/purchases/${id}/complete`)),
+};
+
+/**
+ * Cash upliftments. Preview and create only — the server totals cash payments.
+ * Do not sum GET /payments in the browser.
+ */
+export const cashUpliftmentsApi = {
+  list: async (params = {}) => normalizeList(await http.get('/cash-upliftments', { params }), params),
+  preview: endpoint((params) => http.get('/cash-upliftments/preview', { params })),
+  create: endpoint((payload) => http.post('/cash-upliftments', payload)),
 };

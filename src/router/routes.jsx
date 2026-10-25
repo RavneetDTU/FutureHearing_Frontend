@@ -1,6 +1,8 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
+import { useSession } from '../context/SessionContext';
 import { ResourceListPage } from '../components/resource/ResourceListPage';
+import { AccessRequestsPage } from '../features/admin/AccessRequestsPage';
 import { RolesPage } from '../features/admin/RolesPage';
 import { usersConfig } from '../features/admin/resources';
 import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage';
@@ -9,7 +11,8 @@ import { ResetPasswordPage } from '../features/auth/ResetPasswordPage';
 import { BranchDetailPage } from '../features/branches/BranchDetailPage';
 import { brandsConfig, categoriesConfig, companiesConfig, modelsConfig, subcategoriesConfig } from '../features/catalog/resources';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
-import { appointmentsConfig, communicationsConfig, documentsConfig } from '../features/engagement/resources';
+import { CommunicationsInboxPage } from '../features/engagement/CommunicationsInboxPage';
+import { appointmentsConfig, documentsConfig } from '../features/engagement/resources';
 import { StockPage } from '../features/inventory/StockPage';
 import { branchesConfig, practicesConfig, suppliersConfig, warehousesConfig } from '../features/inventory/resources';
 import { LeadDetailPage } from '../features/leads/LeadDetailPage';
@@ -18,7 +21,9 @@ import { ClaimDetailPage } from '../features/medical/ClaimDetailPage';
 import { ClaimsListPage } from '../features/medical/ClaimsListPage';
 import { IcdCodesPage } from '../features/medical/IcdCodesPage';
 import { MedicalAidDetailPage } from '../features/medical/MedicalAidDetailPage';
-import { medicalAidPlansConfig, medicalAidsConfig, procedureCodesConfig } from '../features/medical/resources';
+import { MedicalAidsListPage } from '../features/medical/MedicalAidsListPage';
+import { ProcedureCodesPage } from '../features/medical/ProcedureCodesPage';
+import { medicalAidPlansConfig } from '../features/medical/resources';
 import { NotFoundPage, RouteErrorPage } from '../features/misc/NotFoundPage';
 import { PatientDetailPage } from '../features/patients/PatientDetailPage';
 import { PatientFormPage } from '../features/patients/PatientFormPage';
@@ -32,10 +37,28 @@ import { PurchasesListPage } from '../features/purchases/PurchasesListPage';
 import { InvoiceDetailPage } from '../features/sales/InvoiceDetailPage';
 import { InvoiceEditorPage } from '../features/sales/InvoiceEditorPage';
 import { InvoicesListPage } from '../features/sales/InvoicesListPage';
+import { CashUpliftmentsPage } from '../features/sales/CashUpliftmentsPage';
+import { PaymentReportPage } from '../features/sales/PaymentReportPage';
 import { fullTestsConfig, paymentsConfig, refundsConfig } from '../features/sales/resources';
 import { SettingsPage } from '../features/settings/SettingsPage';
 
 const list = (path, crumb, config) => ({ path, handle: { crumb }, element: <ResourceListPage key={path} config={config} /> });
+
+function AdminOnly({ children }) {
+  const { user } = useSession();
+  if (!user?.isAdmin) return <Navigate to="/products" replace />;
+  return children;
+}
+
+const adminList = (path, crumb, config) => ({
+  path,
+  handle: { crumb },
+  element: (
+    <AdminOnly>
+      <ResourceListPage key={path} config={config} />
+    </AdminOnly>
+  ),
+});
 
 const DETAIL = 'Details';
 
@@ -64,11 +87,11 @@ export const router = createBrowserRouter([
               { path: ':id/edit', handle: { crumb: 'Edit' }, element: <ProductFormPage /> },
             ],
           },
-          list('companies', 'Companies', companiesConfig),
-          list('brands', 'Brands', brandsConfig),
-          list('models', 'Models', modelsConfig),
-          list('categories', 'Categories', categoriesConfig),
-          list('subcategories', 'Subcategories', subcategoriesConfig),
+          adminList('companies', 'Companies', companiesConfig),
+          adminList('brands', 'Brands', brandsConfig),
+          adminList('models', 'Models', modelsConfig),
+          adminList('categories', 'Categories', categoriesConfig),
+          adminList('subcategories', 'Subcategories', subcategoriesConfig),
 
           { path: 'stock', handle: { crumb: 'Stock' }, element: <StockPage /> },
           list('warehouses', 'Warehouses', warehousesConfig),
@@ -93,6 +116,8 @@ export const router = createBrowserRouter([
               { path: ':id/edit', handle: { crumb: 'Edit' }, element: <InvoiceEditorPage key="edit" /> },
             ],
           },
+          { path: 'cash-upliftments', handle: { crumb: 'Upliftments' }, element: <CashUpliftmentsPage /> },
+          { path: 'payment-report', handle: { crumb: 'Payment totals' }, element: <PaymentReportPage /> },
           list('full-tests', 'Full Tests', fullTestsConfig),
           list('payments', 'Payments', paymentsConfig),
           list('refunds', 'Refunds', refundsConfig),
@@ -119,19 +144,19 @@ export const router = createBrowserRouter([
           },
           list('appointments', 'Appointments', appointmentsConfig),
           list('documents', 'Documents', documentsConfig),
-          list('communications', 'Communications', communicationsConfig),
+          { path: 'communications', handle: { crumb: 'Communications' }, element: <CommunicationsInboxPage /> },
 
           {
             path: 'medical-aids',
             handle: { crumb: 'Medical aids' },
             children: [
-              { index: true, element: <ResourceListPage key="medical-aids" config={medicalAidsConfig} /> },
+              { index: true, element: <MedicalAidsListPage /> },
               { path: ':id', handle: { crumb: DETAIL }, element: <MedicalAidDetailPage /> },
             ],
           },
           list('medical-aid-plans', 'Medical aid plans', medicalAidPlansConfig),
           { path: 'icd-codes', handle: { crumb: 'ICD codes' }, element: <IcdCodesPage /> },
-          list('procedure-codes', 'Procedure codes', procedureCodesConfig),
+          { path: 'procedure-codes', handle: { crumb: 'Procedure codes' }, element: <ProcedureCodesPage /> },
           {
             path: 'claims',
             handle: { crumb: 'Medical claims' },
@@ -151,6 +176,15 @@ export const router = createBrowserRouter([
           },
           list('users', 'Users', usersConfig),
           { path: 'roles', handle: { crumb: 'Roles & permissions' }, element: <RolesPage /> },
+          {
+            path: 'access-requests',
+            handle: { crumb: 'List access requests' },
+            element: (
+              <AdminOnly>
+                <AccessRequestsPage />
+              </AdminOnly>
+            ),
+          },
           {
             path: 'settings',
             handle: { crumb: 'Settings' },

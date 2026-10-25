@@ -1,5 +1,5 @@
 import { http } from './client';
-import { createResource, endpoint, normalizeArray } from './resource';
+import { createResource, endpoint, normalizeArray, normalizeList } from './resource';
 
 export const usersApi = createResource('/users');
 export const rolesApi = createResource('/roles');
@@ -35,4 +35,18 @@ export const notificationsApi = {
 export const settingsApi = {
   get: endpoint((section) => http.get(`/settings/${section}`)),
   update: endpoint((section, payload) => http.put(`/settings/${section}`, payload)),
+};
+
+/** Admin-only per-IP sign-in requests. The server records IP, OS, browser and warehouse. */
+export const accessRequestsApi = {
+  list: async (params = {}) => normalizeList(await http.get('/access-requests', { params }), params),
+  decide: endpoint((id, payload) => http.post(`/access-requests/${id}/decision`, payload)),
+};
+
+/**
+ * Server-side payment totals. Query: branchId, from (exclusive), to (inclusive), method.
+ * Do not add up GET /payments pages in the browser.
+ */
+export const reportsApi = {
+  payments: endpoint((params) => http.get('/reports/payments', { params })),
 };

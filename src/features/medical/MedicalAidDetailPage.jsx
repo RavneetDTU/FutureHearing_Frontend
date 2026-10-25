@@ -45,10 +45,12 @@ export function MedicalAidDetailPage() {
                 columns={3}
                 items={[
                   { label: 'Administrator', value: aid.administrator },
+                  { label: 'Scheme type', value: aid.schemeType },
                   { label: 'Telephone', value: aid.phone },
                   { label: 'General email', value: aid.email },
                   { label: 'Claims email', value: aid.claimsEmail },
                   { label: 'Website', value: aid.website && <a href={aid.website} target="_blank" rel="noreferrer">{aid.website}</a> },
+                  { label: 'Notes', value: aid.notes, span: true },
                 ]}
               />
             </CardBody>
@@ -68,7 +70,7 @@ export function MedicalAidDetailPage() {
             initialValues={aid}
             submitLabel="Save changes"
             onSubmit={async (values) => {
-              await medicalAidsApi.update(id, values);
+              await medicalAidsApi.update(id, medicalAidsConfig.toPayload(values));
               toast.success('Medical aid updated');
               setEditing(false);
               refetch();

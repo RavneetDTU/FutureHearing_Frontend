@@ -7,6 +7,8 @@ import { Button, Card, DataTable, PageHeader, Pagination, SearchBar, Select, Sta
 import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { useListQuery } from '../../hooks/useListQuery';
+import { visibleColumns } from '../../components/resource/columns';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency, formatDate, invoicePaidAmount, invoicePaymentStatus } from '../../utils/format';
 
 const STAGE_TABS = [
@@ -33,7 +35,7 @@ export const invoicesConfig = {
     col.link('patientName', 'Patient', (r) => `/patients/${r.patientId}`),
     { key: 'type', header: 'Status', sortable: true, render: (r) => <StatusBadge domain="invoiceType" value={r.type} dot={false} /> },
     col.currency('total', 'Total'),
-    { key: 'paid', header: 'Paid', align: 'right', render: (r) => formatCurrency(invoicePaidAmount(r)) },
+    { key: 'paid', header: 'Paid', align: 'right', money: true, render: (r) => formatCurrency(invoicePaidAmount(r)) },
     col.currency('balance', 'Balance'),
     { key: 'payment', header: 'Payment', render: (r) => <StatusBadge domain="invoicePayment" value={invoicePaymentStatus(r)} /> },
   ],
@@ -42,7 +44,7 @@ export const invoicesConfig = {
 export function InvoicesListPage() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { can, branchId } = useSession();
+  const { can, branchId, user } = useSession();
   const [createType, setCreateType] = useState('invoice');
   const list = useListQuery(invoicesApi.list, {
     filters: { type: '' },
@@ -112,7 +114,7 @@ export function InvoicesListPage() {
         </div>
         <DataTable
           resource="invoices"
-          columns={invoicesConfig.columns}
+          columns={visibleColumns(invoicesConfig.columns, canSeePrices(user))}
           rows={list.items}
           loading={list.loading}
           error={list.error}

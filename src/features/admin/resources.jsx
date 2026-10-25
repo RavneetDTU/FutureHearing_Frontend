@@ -7,7 +7,7 @@ export const usersConfig = {
   title: 'Users',
   singular: 'User',
   eyebrow: 'Users & access',
-  description: 'Staff accounts, their role, the branches they can work in and their default branch and warehouse. Access rules are enforced by the backend.',
+  description: 'Staff accounts, their role, the branches they can work in and their default branch and warehouse. Creating a store manager does not approve an IP — their first sign-in from a new address appears under Access requests.',
   permissions: { create: 'users.create', edit: 'users.edit', delete: 'users.delete' },
   columns: [
     col.entity('fullName', 'User', 'email'),

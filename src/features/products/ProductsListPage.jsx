@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { col, statusFilter } from '../../components/resource/columns';
 import { ResourceListPage } from '../../components/resource/ResourceListPage';
 import { Badge, Button, EntityCell, StatusBadge } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { AdjustQuantityModal } from '../inventory/AdjustQuantityModal';
 import { formatNumber } from '../../utils/format';
 
 export function ProductsListPage() {
   const [adjusting, setAdjusting] = useState(null);
+  const { can } = useSession();
+  const canAdjust = can('products.edit');
 
   const config = {
     resource: 'products',
@@ -68,7 +71,7 @@ export function ProductsListPage() {
       {
         label: 'Adjust quantity',
         icon: SlidersHorizontal,
-        hidden: row.type === 'service',
+        hidden: row.type === 'service' || !canAdjust,
         onClick: () => setAdjusting(row),
       },
     ],
@@ -77,9 +80,11 @@ export function ProductsListPage() {
         <Button icon={Boxes} to="/stock">
           Stock overview
         </Button>
-        <Button icon={SlidersHorizontal} onClick={() => setAdjusting({})}>
-          Adjust quantity
-        </Button>
+        {canAdjust && (
+          <Button icon={SlidersHorizontal} onClick={() => setAdjusting({})}>
+            Adjust quantity
+          </Button>
+        )}
       </>
     ),
   };

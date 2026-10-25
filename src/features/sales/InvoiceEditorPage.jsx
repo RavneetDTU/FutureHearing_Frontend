@@ -28,6 +28,7 @@ import { useToast } from '../../context/ToastContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useOptions } from '../../hooks/useOptions';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency } from '../../utils/format';
 import { FullTestModal } from './FullTestModal';
 import { ProductPickerModal } from './ProductPickerModal';
@@ -105,6 +106,8 @@ function toPayload(header, lines, type) {
 function InvoiceEditor({ initial, invoiceId }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const [header, setHeader] = useState(initial.header);
   const [lines, setLines] = useState(initial.lines);
   const [errors, setErrors] = useState({});
@@ -365,7 +368,7 @@ function InvoiceEditor({ initial, invoiceId }) {
                   <tr>
                     <th>Item</th>
                     <th style={{ width: 90 }}>Qty</th>
-                    <th style={{ width: 130 }}>Unit price</th>
+                    {seePrices && <th style={{ width: 130 }}>Unit price</th>}
                     <th>Coding / stock</th>
                     <th className="col-actions" />
                   </tr>
@@ -394,6 +397,7 @@ function InvoiceEditor({ initial, invoiceId }) {
                             style={errors[`qty-${l.key}`] ? { borderColor: 'var(--tone-danger-fg)' } : undefined}
                           />
                         </td>
+                        {seePrices && (
                         <td>
                           <Input
                             size="sm"
@@ -405,6 +409,7 @@ function InvoiceEditor({ initial, invoiceId }) {
                             onChange={(e) => updateLine(l.key, { unitPrice: e.target.value })}
                           />
                         </td>
+                        )}
                         <td style={{ minWidth: 260 }}>
                           {l.type === 'service' ? (
                             <div className="stack-sm">
@@ -488,7 +493,7 @@ function InvoiceEditor({ initial, invoiceId }) {
                   <MultiSelect id={id} options={icd.options} loading={icd.loading} value={header.icdCodeIds} onChange={(v) => set('icdCodeIds', v)} placeholder="Search ICD-10 codes…" />
                 )}
               </FormField>
-              <div>
+              {seePrices && <div>
                 <div className="kbd-total">
                   <span className="muted">Subtotal</span>
                   <span>{totals.loading ? '…' : formatCurrency(totals.data?.subtotal ?? 0)}</span>
@@ -502,7 +507,7 @@ function InvoiceEditor({ initial, invoiceId }) {
                   <span>{totals.loading ? <Spinner /> : formatCurrency(totals.data?.total ?? 0)}</span>
                 </div>
                 {totals.error && <div className="field-error">Unable to calculate totals.</div>}
-              </div>
+              </div>}
               {hasStockIssue && header.type === 'invoice' && (
                 <Alert tone="warning" title="Stock unavailable">
                   One or more products do not have enough stock in the selected warehouse. A final invoice will be rejected until stock is available. Quotes and pro formas do not reserve stock.

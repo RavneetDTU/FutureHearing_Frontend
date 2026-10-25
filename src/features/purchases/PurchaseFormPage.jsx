@@ -1,6 +1,6 @@
 import { PackageCheck, Plus, Save, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { purchasesApi } from '../../api';
 import {
   Alert,
@@ -20,7 +20,9 @@ import {
   ResourceSelect,
   Textarea,
 } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
+import { canSeePrices } from '../../utils/access';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { SerialNumberInputs } from './SerialNumberInputs';
 
@@ -55,6 +57,8 @@ const fromPurchase = (p) => ({
 function PurchaseForm({ initial, purchaseId }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const [header, setHeader] = useState(initial.header);
   const [lines, setLines] = useState(initial.lines);
   const [errors, setErrors] = useState({});
@@ -227,9 +231,11 @@ function PurchaseForm({ initial, purchaseId }) {
                         <Input id={id} size="sm" type="number" min={1} step={1} style={{ width: 90 }} value={l.quantity} onChange={(e) => updateLine(l.key, { quantity: e.target.value })} />
                       )}
                     </FormField>
+                    {seePrices && (
                     <FormField label="Unit cost">
                       {({ id }) => <div style={{ width: 140 }}><CurrencyInput id={id} className="has-addon input-sm" value={l.unitCost} onChange={(e) => updateLine(l.key, { unitCost: e.target.value })} /></div>}
                     </FormField>
+                    )}
                     <Button size="sm" variant="ghost" iconOnly icon={Trash2} aria-label={`Remove ${l.productName}`} onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))} />
                   </div>
                 </div>
@@ -281,6 +287,7 @@ function PurchaseForm({ initial, purchaseId }) {
 
 export function PurchaseFormPage() {
   const { id } = useParams();
+  const { user } = useSession();
   const q = useApiQuery(() => purchasesApi.get(id), [id], { enabled: Boolean(id) });
   return (
     <>
@@ -292,7 +299,7 @@ export function PurchaseFormPage() {
       {id ? (
         <QueryState loading={q.loading} error={q.error} onRetry={q.refetch} resource="purchase">
           {q.data &&
-            (q.data.status === 'completed' ? (
+            (q.data.status === 'completed' && !user?.isAdmin ? (
               <Alert tone="warning" title="Received purchases cannot be edited">
                 Stock has already been booked. Use Adjust Quantity for corrections. <Link to={`/purchases/${id}`}>Back to purchase</Link>
               </Alert>
@@ -300,8 +307,10 @@ export function PurchaseFormPage() {
               <PurchaseForm key={id} initial={fromPurchase(q.data)} purchaseId={id} />
             ))}
         </QueryState>
-      ) : (
+      ) : user?.isAdmin ? (
         <PurchaseForm initial={emptyPurchase()} />
+      ) : (
+        <Navigate to="/purchases" replace />
       )}
     </>
   );

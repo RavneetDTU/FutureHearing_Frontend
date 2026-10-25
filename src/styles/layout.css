@@ -87,6 +87,20 @@
 .sidebar-link:hover {
   background: var(--gray-100);
 }
+.sidebar-link.is-disabled,
+.sidebar-link.is-disabled:hover {
+  background: transparent;
+  opacity: 0.55;
+  cursor: default;
+}
+.sidebar-soon {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+}
 .sidebar-link.is-active {
   background: var(--color-primary);
   color: #fff;

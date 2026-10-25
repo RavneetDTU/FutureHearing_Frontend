@@ -3,8 +3,10 @@ import { ArrowLeft, ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import { fullTestsApi } from '../../api';
 import { Alert, Button, Card, FormField, Modal, MultiSelect, QueryState } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useOptions } from '../../hooks/useOptions';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency } from '../../utils/format';
 
 /**
@@ -12,6 +14,8 @@ import { formatCurrency } from '../../utils/format';
  * onAdd(template, icdCodeIds)
  */
 export function FullTestModal({ open, onClose, onAdd }) {
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const [step, setStep] = useState('choose');
   const [template, setTemplate] = useState(null);
   const [icdCodeIds, setIcdCodeIds] = useState([]);
@@ -88,7 +92,7 @@ export function FullTestModal({ open, onClose, onAdd }) {
                     </div>
                   </div>
                 </div>
-                <span className="strong nowrap">{formatCurrency(t.price)}</span>
+                {seePrices && <span className="strong nowrap">{formatCurrency(t.price)}</span>}
               </button>
             ))}
           </div>
@@ -101,7 +105,7 @@ export function FullTestModal({ open, onClose, onAdd }) {
                 <tr>
                   <th>Included service</th>
                   <th>Procedure code</th>
-                  <th className="text-right">Price</th>
+                  {seePrices && <th className="text-right">Price</th>}
                 </tr>
               </thead>
               <tbody>
@@ -109,7 +113,7 @@ export function FullTestModal({ open, onClose, onAdd }) {
                   <tr key={s.productId}>
                     <td className="strong">{s.productName}</td>
                     <td className="mono">{s.procedureCode}</td>
-                    <td className="text-right">{formatCurrency(s.price)}</td>
+                    {seePrices && <td className="text-right">{formatCurrency(s.price)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -130,7 +134,7 @@ export function FullTestModal({ open, onClose, onAdd }) {
               />
             )}
           </FormField>
-          <Alert tone="info">Prices shown come from the template. Final totals are calculated by the backend on the invoice.</Alert>
+          {seePrices && <Alert tone="info">Prices shown come from the template. Final totals are calculated by the backend on the invoice.</Alert>}
         </div>
       )}
     </Modal>

@@ -64,14 +64,14 @@ export const emptyProduct = (type = 'standard') => ({
   procedureCodeIds: [],
 });
 
-export function toProductPayload(values) {
+export function toProductPayload(values, { includeCost = true, includePrice = true } = {}) {
   const base = {
     type: values.type,
     name: values.name,
     sku: values.sku,
     categoryId: values.categoryId || null,
     subcategoryId: values.subcategoryId || null,
-    price: values.price === '' ? null : Number(values.price),
+    ...(includePrice ? { price: values.price === '' ? null : Number(values.price) } : {}),
     vatRate: values.vatRate === '' || values.vatRate === undefined ? null : Number(values.vatRate),
     description: values.description,
     status: values.status,
@@ -90,7 +90,9 @@ export function toProductPayload(values) {
     brandId: values.brandId,
     modelId: values.modelId || null,
     barcode: values.barcode,
-    cost: values.cost === '' || values.cost === undefined ? null : Number(values.cost),
+    ...(includeCost
+      ? { cost: values.cost === '' || values.cost === undefined ? null : Number(values.cost) }
+      : {}),
     reorderLevel: values.reorderLevel === '' || values.reorderLevel === undefined ? null : Number(values.reorderLevel),
     trackSerials: Boolean(values.trackSerials),
   };

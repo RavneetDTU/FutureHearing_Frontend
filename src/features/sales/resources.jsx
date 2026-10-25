@@ -85,7 +85,7 @@ export const paymentsConfig = {
   defaultValues: { status: 'completed', method: 'card' },
   toPayload: (v) => ({
     invoiceId: v.invoiceId,
-    amount: Number(v.amount),
+    amount: v.amount === '' || v.amount == null || !Number.isFinite(Number(v.amount)) ? undefined : Number(v.amount),
     method: v.method,
     date: v.date || null,
     reference: v.reference || null,
@@ -132,7 +132,7 @@ export const refundsConfig = {
   defaultValues: { status: 'requested', method: 'eft' },
   toPayload: (v) => ({
     invoiceId: v.invoiceId,
-    amount: Number(v.amount),
+    amount: v.amount === '' || v.amount == null || !Number.isFinite(Number(v.amount)) ? undefined : Number(v.amount),
     method: v.method,
     date: v.date || null,
     reason: v.reason,

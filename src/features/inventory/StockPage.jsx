@@ -16,6 +16,7 @@ import {
   Tabs,
 } from '../../components/ui';
 import { useSession } from '../../context/SessionContext';
+import { canSeeProductCost } from '../../utils/access';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useListQuery } from '../../hooks/useListQuery';
 import { formatCurrency, formatDateTime, formatNumber } from '../../utils/format';
@@ -44,7 +45,8 @@ function GroupList({ rows = [] }) {
 }
 
 export function StockPage() {
-  const { branchId } = useSession();
+  const { branchId, can, user } = useSession();
+  const seeCost = canSeeProductCost(user);
   const [adjusting, setAdjusting] = useState(null);
   const [groupTab, setGroupTab] = useState('branch');
   const summary = useApiQuery(() => stockApi.summary({ branchId }), [branchId]);
@@ -59,9 +61,11 @@ export function StockPage() {
         title="Stock overview"
         description="Stock quantities are calculated by the backend from purchases, invoices and adjustments."
         actions={
-          <Button variant="primary" icon={SlidersHorizontal} onClick={() => setAdjusting({})}>
-            Adjust quantity
-          </Button>
+          can('products.edit') ? (
+            <Button variant="primary" icon={SlidersHorizontal} onClick={() => setAdjusting({})}>
+              Adjust quantity
+            </Button>
+          ) : null
         }
       />
 
@@ -69,7 +73,7 @@ export function StockPage() {
         <StatCard label="Total stock" value={formatNumber(totals.totalUnits)} hint="Units on hand" icon={Boxes} loading={summary.loading} />
         <StatCard label="Low stock" value={formatNumber(totals.lowStock)} hint="At or below reorder level" icon={AlertTriangle} tone="warning" loading={summary.loading} />
         <StatCard label="Out of stock" value={formatNumber(totals.outOfStock)} hint="Zero available" icon={PackageX} tone="danger" loading={summary.loading} />
-        <StatCard label="Stock value" value={formatCurrency(totals.stockValue)} hint="At cost" icon={Wallet} tone="success" loading={summary.loading} />
+        {seeCost && <StatCard label="Stock value" value={formatCurrency(totals.stockValue)} hint="At cost" icon={Wallet} tone="success" loading={summary.loading} />}
       </div>
 
       <div className="grid grid-main-aside">

@@ -77,6 +77,11 @@ export const STATUSES = {
     processed: { label: 'Processed', tone: 'success' },
     rejected: { label: 'Rejected', tone: 'danger' },
   },
+  accessRequest: {
+    pending: { label: 'Pending', tone: 'warning' },
+    approved: { label: 'Approved', tone: 'success' },
+    rejected: { label: 'Rejected', tone: 'danger' },
+  },
   communication: {
     sent: { label: 'Sent', tone: 'info' },
     delivered: { label: 'Delivered', tone: 'info' },
@@ -125,6 +130,10 @@ export const OPTION_SETS = {
     { value: 'follow_up', label: 'Follow-up' },
     { value: 'repair', label: 'Repair' },
   ],
+  yesNo: [
+    { value: 'yes', label: 'Yes' },
+    { value: 'no', label: 'No' },
+  ],
   paymentMethod: [
     { value: 'card', label: 'Card' },
     { value: 'cash', label: 'Cash' },
@@ -151,6 +160,20 @@ export const OPTION_SETS = {
     { value: 'inbound', label: 'Inbound' },
   ],
   membershipType: ['Comprehensive', 'Hospital', 'Saver', 'Network', 'Other'].map((t) => ({ value: t, label: t })),
+  schemeType: [
+    { value: 'OPEN', label: 'Open' },
+    { value: 'RESTRICTED', label: 'Restricted' },
+  ],
+  icdRelevance: [
+    { value: 'Yes', label: 'Yes' },
+    { value: 'No', label: 'No' },
+    { value: 'Conditional', label: 'Conditional' },
+    { value: 'Referral only', label: 'Referral only' },
+  ],
+  practiceType: [
+    { value: '082 Audiologist', label: '082 Audiologist' },
+    { value: '083 Hearing aid acoustician', label: '083 Hearing aid acoustician' },
+  ],
 };
 
 export function humanize(value) {

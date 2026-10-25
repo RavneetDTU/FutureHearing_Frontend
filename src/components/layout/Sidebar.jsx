@@ -6,7 +6,7 @@ import { NAVIGATION } from '../../config/navigation';
 import { useSession } from '../../context/SessionContext';
 import { Logo } from './Logo';
 
-const matches = (pathname, to) => pathname === to || pathname.startsWith(`${to}/`);
+const matches = (pathname, to) => Boolean(to) && (pathname === to || pathname.startsWith(`${to}/`));
 
 /** The most specific child matching the current path, so /invoices/new doesn't also highlight /invoices. */
 function activeChildOf(item, pathname) {
@@ -16,8 +16,8 @@ function activeChildOf(item, pathname) {
     .sort((a, b) => b.to.length - a.to.length)[0];
 }
 
-function NavSection({ item, pathname, onNavigate, can }) {
-  const children = item.children.filter((c) => can(c.permission));
+function NavSection({ item, pathname, onNavigate, can, user }) {
+  const children = item.children.filter((c) => visibleItem(c, can, user));
   const activeChild = activeChildOf({ children }, pathname);
   const [open, setOpen] = useState(Boolean(activeChild));
 
@@ -42,25 +42,37 @@ function NavSection({ item, pathname, onNavigate, can }) {
       </button>
       {open && (
         <div className="sidebar-children">
-          {children.map((child) => (
-            <Link
-              key={child.to}
-              to={child.to}
-              className={clsx('sidebar-link', activeChild?.to === child.to && 'is-active')}
-              onClick={onNavigate}
-            >
-              <span className="sidebar-link-label">{child.label}</span>
-            </Link>
-          ))}
+          {children.map((child) =>
+            child.comingSoon ? (
+              <div key={child.label} className="sidebar-link is-disabled" aria-disabled="true">
+                <span className="sidebar-link-label">{child.label}</span>
+                <span className="sidebar-soon">Soon</span>
+              </div>
+            ) : (
+              <Link
+                key={child.to}
+                to={child.to}
+                className={clsx('sidebar-link', activeChild?.to === child.to && 'is-active')}
+                onClick={onNavigate}
+              >
+                <span className="sidebar-link-label">{child.label}</span>
+              </Link>
+            ),
+          )}
         </div>
       )}
     </div>
   );
 }
 
+function visibleItem(item, can, user) {
+  if (item.adminOnly && !user?.isAdmin) return false;
+  return can(item.permission);
+}
+
 export function Sidebar({ onNavigate }) {
   const { pathname } = useLocation();
-  const { can } = useSession();
+  const { can, user } = useSession();
 
   return (
     <aside className="app-sidebar" aria-label="Main navigation">
@@ -70,14 +82,20 @@ export function Sidebar({ onNavigate }) {
       </div>
       <nav className="sidebar-nav">
         {NAVIGATION.map((group) => {
-          const items = group.items.filter((i) => can(i.permission));
+          const items = group.items.filter((i) => visibleItem(i, can, user));
           if (!items.length) return null;
           return (
             <div key={group.title} className="sidebar-group">
               <div className="sidebar-group-title">{group.title}</div>
               {items.map((item) =>
-                item.children ? (
-                  <NavSection key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} can={can} />
+                item.comingSoon ? (
+                  <div key={item.label} className="sidebar-link is-disabled" aria-disabled="true" title="Coming soon">
+                    <item.icon size={18} />
+                    <span className="sidebar-link-label">{item.label}</span>
+                    <span className="sidebar-soon">Soon</span>
+                  </div>
+                ) : item.children ? (
+                  <NavSection key={item.label} item={item} pathname={pathname} onNavigate={onNavigate} can={can} user={user} />
                 ) : (
                   <Link
                     key={item.to}
