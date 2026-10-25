@@ -1,8 +1,10 @@
 import {
+  Banknote,
   Boxes,
   Building2,
   CircleDollarSign,
   HeartPulse,
+  KeyRound,
   LayoutDashboard,
   MessagesSquare,
   Package,
@@ -30,11 +32,11 @@ export const NAVIGATION = [
         permission: 'products.view',
         children: [
           { label: 'All products', to: '/products' },
-          { label: 'Companies', to: '/companies' },
-          { label: 'Brands', to: '/brands' },
-          { label: 'Models', to: '/models' },
-          { label: 'Categories', to: '/categories' },
-          { label: 'Subcategories', to: '/subcategories' },
+          { label: 'Companies', to: '/companies', adminOnly: true },
+          { label: 'Brands', to: '/brands', adminOnly: true },
+          { label: 'Models', to: '/models', adminOnly: true },
+          { label: 'Categories', to: '/categories', adminOnly: true },
+          { label: 'Subcategories', to: '/subcategories', adminOnly: true },
         ],
       },
       {
@@ -55,9 +57,16 @@ export const NAVIGATION = [
           { label: 'Full Tests', to: '/full-tests', permission: 'invoices.create' },
           { label: 'Payments', to: '/payments', permission: 'payments.view' },
           { label: 'Refunds', to: '/refunds', permission: 'payments.view' },
+          { label: 'Payment totals', to: '/payment-report', permission: 'payments.view' },
         ],
       },
       { label: 'Purchases', to: '/purchases', icon: ShoppingCart, permission: 'purchases.view' },
+      {
+        label: 'Cash',
+        icon: Banknote,
+        permission: 'payments.view',
+        children: [{ label: 'Upliftments', to: '/cash-upliftments' }],
+      },
     ],
   },
   {
@@ -87,12 +96,18 @@ export const NAVIGATION = [
       },
       { label: 'Leads', to: '/leads', icon: Target, permission: 'leads.view' },
       { label: 'Communications', to: '/communications', icon: MessagesSquare, permission: 'patients.view' },
-      { label: 'Suppliers', to: '/suppliers', icon: Truck, permission: 'purchases.view' },
+      { label: 'Suppliers', to: '/suppliers', icon: Truck, adminOnly: true },
     ],
   },
   {
     title: 'Administration',
     items: [
+      {
+        label: 'Access requests',
+        icon: KeyRound,
+        adminOnly: true,
+        children: [{ label: 'List access requests', to: '/access-requests' }],
+      },
       {
         label: 'Branches',
         icon: Building2,

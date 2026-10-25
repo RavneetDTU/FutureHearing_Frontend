@@ -1,6 +1,8 @@
 import { ApiError, paymentsApi } from '../../api';
 import { EntityFormModal } from '../../components/resource/EntityFormModal';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency } from '../../utils/format';
 
 const FIELDS = [
@@ -13,15 +15,17 @@ const FIELDS = [
 
 export function RecordPaymentModal({ open, onClose, invoice, onDone }) {
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   return (
     <EntityFormModal
       open={open}
       onClose={onClose}
       size="md"
       title="Record payment"
-      description={invoice ? `${invoice.number} · Balance ${formatCurrency(invoice.balance)}` : undefined}
+      description={invoice ? (seePrices ? `${invoice.number} · Balance ${formatCurrency(invoice.balance)}` : invoice.number) : undefined}
       submitLabel="Record payment"
-      fields={FIELDS}
+      fields={seePrices ? FIELDS : FIELDS.filter((field) => field.type !== 'currency')}
       initialValues={{ amount: invoice?.balance ?? '', method: 'card', date: new Date().toISOString().slice(0, 10) }}
       onSubmit={async (values) => {
         const amount = Number(values.amount);
@@ -29,7 +33,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onDone }) {
         if (Number.isFinite(balance) && amount > balance) {
           throw new ApiError('A payment larger than the outstanding balance is rejected.', {
             status: 422,
-            fieldErrors: { amount: `Cannot exceed the outstanding balance of ${formatCurrency(balance)}.` },
+            fieldErrors: { amount: seePrices ? `Cannot exceed the outstanding balance of ${formatCurrency(balance)}.` : 'Cannot exceed the outstanding balance.' },
           });
         }
         await paymentsApi.create({
@@ -41,7 +45,7 @@ export function RecordPaymentModal({ open, onClose, invoice, onDone }) {
           reference: values.reference || null,
           notes: values.notes || null,
         });
-        toast.success('Payment recorded', formatCurrency(amount));
+        toast.success('Payment recorded', seePrices ? formatCurrency(amount) : undefined);
         onDone?.();
         onClose();
       }}

@@ -3,7 +3,9 @@ import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { productsApi } from '../../api';
 import { Alert, Button, Card, CardBody, PageHeader, QueryState, SchemaForm, SegmentedControl } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
+import { canSeePrices } from '../../utils/access';
 import { useApiQuery } from '../../hooks/useApiQuery';
 import { useForm } from '../../hooks/useForm';
 import { useMutation } from '../../hooks/useMutation';
@@ -12,15 +14,20 @@ import { emptyProduct, getProductFields, toProductPayload } from './productField
 function ProductForm({ record, isEdit }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const form = useForm(record);
-  const fields = useMemo(() => getProductFields(form.values.type), [form.values.type]);
+  const fields = useMemo(
+    () => getProductFields(form.values.type).filter((field) => seePrices || !['cost', 'price', 'vatRate', 'h-pricing'].includes(field.name)),
+    [form.values.type, seePrices],
+  );
   const save = useMutation((payload) => (isEdit ? productsApi.update(record.id, payload) : productsApi.create(payload)));
 
   const onSubmit = async (e) => {
     e.preventDefault();
     if (!form.validate(fields)) return;
     try {
-      const saved = await save.mutate(toProductPayload(form.values));
+      const saved = await save.mutate(toProductPayload(form.values, { includeCost: seePrices, includePrice: seePrices }));
       toast.success(isEdit ? 'Product updated' : 'Product created', form.values.name);
       navigate(isEdit ? `/products/${record.id}` : saved?.id ? `/products/${saved.id}` : '/products');
     } catch (err) {

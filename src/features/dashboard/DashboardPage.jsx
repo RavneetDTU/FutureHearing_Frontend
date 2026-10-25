@@ -28,7 +28,17 @@ import {
 } from '../../components/ui';
 import { useSession } from '../../context/SessionContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency, formatDate, formatNumber } from '../../utils/format';
+
+function stripMoney(text) {
+  if (!text) return text;
+  return text
+    .replace(/(?:\s*·\s*)?R[\s\u00a0\u202f]?[\d][\d\s\u00a0\u202f]*(?:[.,]\d{2})?(?:\s*·\s*)?/g, (match) => (match.includes('·') ? ' · ' : ''))
+    .replace(/(?:\s*·\s*){2,}/g, ' · ')
+    .replace(/^\s*·\s*|\s*·\s*$/g, '')
+    .trim();
+}
 
 function RevenueChart({ series = [] }) {
   const max = Math.max(1, ...series.map((s) => s.value));
@@ -48,6 +58,7 @@ export function DashboardPage() {
   const { branchId, user } = useSession();
   const { data, loading, error, refetch } = useApiQuery(() => dashboardApi.summary({ branchId }), [branchId]);
   const stats = data?.stats ?? {};
+  const seePrices = canSeePrices(user);
 
   if (error) {
     return (
@@ -95,8 +106,8 @@ export function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-main-aside">
-        <Card>
+      <div className={seePrices ? 'grid grid-main-aside' : undefined}>
+        {seePrices && <Card>
           <CardHeader
             title="Revenue / sales overview"
             subtitle="VAT-inclusive invoice totals by month"
@@ -117,11 +128,11 @@ export function DashboardPage() {
               </div>
             </QueryState>
           </div>
-        </Card>
+        </Card>}
         <Card flush>
           <CardHeader title="Recent activity" actions={<Link to="/patients" className="text-sm">View patients</Link>} />
           <QueryState loading={loading} resource="activity" isEmpty={!data?.recentActivity?.length} compact>
-            <ActivityFeed items={data?.recentActivity} />
+            <ActivityFeed items={seePrices ? data?.recentActivity : data?.recentActivity?.map((item) => ({ ...item, description: stripMoney(item.description) }))} />
           </QueryState>
         </Card>
       </div>
@@ -181,7 +192,7 @@ export function DashboardPage() {
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div className="strong">{formatCurrency(inv.total)}</div>
+                      {seePrices && <div className="strong">{formatCurrency(inv.total)}</div>}
                       <StatusBadge domain="invoice" value={inv.status} />
                     </div>
                   </Link>

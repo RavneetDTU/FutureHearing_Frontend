@@ -14,6 +14,7 @@ dist-ssr
 
 # Local developer knowledge base. Not part of the application source.
 docs/
+json/
 
 # Editor directories and files
 .vscode/*

@@ -2,11 +2,15 @@ import { Check, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { productsApi } from '../../api';
 import { Badge, Button, DataTable, EntityCell, FilterBar, Modal, Pagination, StatusBadge } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useListQuery } from '../../hooks/useListQuery';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency } from '../../utils/format';
 
 /** Server-side product search for adding invoice lines. */
 export function ProductPickerModal({ open, onClose, onAdd, type: fixedType }) {
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const list = useListQuery(productsApi.list, {
     filters: { type: fixedType ?? '' },
     baseParams: { status: 'active' },
@@ -51,7 +55,7 @@ export function ProductPickerModal({ open, onClose, onAdd, type: fixedType }) {
               align: 'right',
               render: (p) => (p.type === 'service' ? <Badge>Service</Badge> : p.stockOnHand),
             },
-            { key: 'price', header: 'Price', align: 'right', render: (p) => formatCurrency(p.price) },
+            ...(seePrices ? [{ key: 'price', header: 'Price', align: 'right', render: (p) => formatCurrency(p.price) }] : []),
             {
               key: 'add',
               header: '',

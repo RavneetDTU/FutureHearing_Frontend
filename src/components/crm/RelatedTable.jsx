@@ -1,15 +1,20 @@
 import { resources } from '../../api';
+import { useSession } from '../../context/SessionContext';
 import { useListQuery } from '../../hooks/useListQuery';
+import { canSeePrices } from '../../utils/access';
+import { visibleColumns } from '../resource/columns';
 import { DataTable, Pagination } from '../ui';
 
 /** Paginated list of a resource filtered by owner, e.g. a patient's invoices. */
 export function RelatedTable({ resource, params, columns, label, onRowClick, rowActions, emptyAction }) {
+  const { user } = useSession();
   const list = useListQuery(resources[resource].list, { baseParams: params, pageSize: 10 });
+  const shownColumns = visibleColumns(columns, canSeePrices(user));
   return (
     <>
       <DataTable
         resource={label ?? resource}
-        columns={columns}
+        columns={shownColumns}
         rows={list.items}
         loading={list.loading}
         error={list.error}

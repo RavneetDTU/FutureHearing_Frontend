@@ -21,10 +21,14 @@ import {
 import { optionLabel } from '../../config/statuses';
 import { useToast } from '../../context/ToastContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { visibleColumns } from '../../components/resource/columns';
+import { useSession } from '../../context/SessionContext';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency, formatDate, invoicePaidAmount, invoicePaymentStatus } from '../../utils/format';
 import { RecordPaymentModal } from './RecordPaymentModal';
 
 function InvoicePayments({ invoiceId }) {
+  const { user } = useSession();
   const q = useApiQuery(() => paymentsApi.list({ invoiceId, pageSize: 50 }), [invoiceId]);
   return (
     <DataTable
@@ -34,14 +38,14 @@ function InvoicePayments({ invoiceId }) {
       error={q.error}
       onRetry={q.refetch}
       rows={q.data?.items ?? []}
-      columns={[
+      columns={visibleColumns([
         { key: 'number', header: 'Payment', render: (p) => <strong>{p.number}</strong> },
         { key: 'date', header: 'Date', render: (p) => formatDate(p.date) },
         { key: 'method', header: 'Method', render: (p) => optionLabel('paymentMethod', p.method) },
         { key: 'reference', header: 'Reference' },
-        { key: 'amount', header: 'Amount', align: 'right', render: (p) => formatCurrency(p.amount) },
+        { key: 'amount', header: 'Amount', align: 'right', money: true, render: (p) => formatCurrency(p.amount) },
         { key: 'status', header: 'Status', render: (p) => <StatusBadge domain="payment" value={p.status} /> },
-      ]}
+      ], canSeePrices(user))}
     />
   );
 }
@@ -61,6 +65,8 @@ export function InvoiceDetailPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const { data: inv, loading, error, refetch } = useApiQuery(() => invoicesApi.get(id), [id]);
   const [tab, setTab] = useState('items');
   const [converting, setConverting] = useState(false);
@@ -239,17 +245,17 @@ export function InvoiceDetailPage() {
                         ),
                       },
                       { key: 'quantity', header: 'Qty', align: 'right' },
-                      { key: 'unitPrice', header: 'Unit price', align: 'right', render: (l) => formatCurrency(l.unitPrice) },
-                      { key: 'vatRate', header: 'VAT', align: 'right', render: (l) => `${l.vatRate ?? 0}%` },
-                      { key: 'total', header: 'Line total', align: 'right', render: (l) => <strong>{formatCurrency(l.total)}</strong> },
-                    ]}
+                      { key: 'unitPrice', header: 'Unit price', align: 'right', money: true, render: (l) => formatCurrency(l.unitPrice) },
+                      { key: 'vatRate', header: 'VAT', align: 'right', money: true, render: (l) => `${l.vatRate ?? 0}%` },
+                      { key: 'total', header: 'Line total', align: 'right', money: true, render: (l) => <strong>{formatCurrency(l.total)}</strong> },
+                    ].filter((column) => seePrices || !column.money)}
                   />
                 )}
                 {tab === 'payments' && <InvoicePayments invoiceId={inv.id} />}
                 {tab === 'history' && <InvoiceHistory invoiceId={inv.id} />}
               </Card>
             </div>
-            <Card>
+            {seePrices ? <Card>
               <CardHeader title="Totals" />
               <CardBody>
                 <div className="kbd-total">
@@ -281,7 +287,14 @@ export function InvoiceDetailPage() {
                   </>
                 )}
               </CardBody>
-            </Card>
+            </Card> : inv.type === 'invoice' && (
+              <Card>
+                <CardHeader title="Payment" />
+                <CardBody>
+                  <StatusBadge domain="invoicePayment" value={invoicePaymentStatus(inv)} />
+                </CardBody>
+              </Card>
+            )}
           </div>
 
           <ConfirmDialog

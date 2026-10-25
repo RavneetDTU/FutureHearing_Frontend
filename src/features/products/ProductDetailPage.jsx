@@ -1,4 +1,4 @@
-import { Pencil, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Pencil, Printer, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { productsApi, stockApi } from '../../api';
@@ -15,10 +15,87 @@ import {
   QueryState,
   StatusBadge,
 } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
+import { canSeePrices } from '../../utils/access';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { barcodeToSvg, barcodeValue, isValidBarcodeValue } from '../../utils/barcode';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import { AdjustQuantityModal } from '../inventory/AdjustQuantityModal';
+import { ProductBarcode } from './ProductBarcode';
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function printWindow() {
+  const popup = window.open('', '_blank', 'width=420,height=640');
+  if (popup) return popup;
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(iframe);
+  iframe.contentWindow?.addEventListener('afterprint', () => iframe.remove());
+  setTimeout(() => iframe.remove(), 60_000);
+  return iframe.contentWindow;
+}
+
+function printLabel(product) {
+  const code = barcodeValue(product);
+  if (!code || !isValidBarcodeValue(code)) {
+    throw new Error('This code cannot be printed as a barcode.');
+  }
+  let svg = '';
+  try {
+    svg = barcodeToSvg(code, { height: 48, width: 1.6 });
+  } catch {
+    svg = '';
+  }
+  if (!svg) {
+    throw new Error('This code cannot be printed as a barcode.');
+  }
+
+  const name = escapeHtml(product.name);
+  const sku = escapeHtml(product.sku || code);
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${sku}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #fff; text-align: center; padding: 24px; }
+    h1 { font-size: 18px; margin-bottom: 16px; }
+    .barcode { margin: 16px 0; display: flex; justify-content: center; }
+    .barcode svg { max-width: 100%; height: auto; }
+    .code { font-family: ui-monospace, monospace; letter-spacing: 0.08em; margin-top: 8px; }
+    .sku { margin-top: 8px; color: #444; }
+  </style>
+</head>
+<body>
+  <h1>${name}</h1>
+  <div class="barcode">${svg}</div>
+  <p class="code">${escapeHtml(code)}</p>
+  <p class="sku">SKU ${sku}</p>
+</body>
+</html>`;
+
+  const target = printWindow();
+  if (!target?.document) {
+    throw new Error('Pop-up blocked. Allow pop-ups to print barcodes.');
+  }
+
+  target.document.open();
+  target.document.write(html);
+  target.document.close();
+  target.focus();
+  setTimeout(() => target.print(), 250);
+}
 
 function StockByWarehouse({ productId }) {
   const q = useApiQuery(() => stockApi.levels({ productId, pageSize: 50 }), [productId]);
@@ -49,6 +126,8 @@ export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { can, user } = useSession();
+  const seePrices = canSeePrices(user);
   const { data: p, loading, error, refetch } = useApiQuery(() => productsApi.get(id), [id]);
   const [adjusting, setAdjusting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -75,17 +154,35 @@ export function ProductDetailPage() {
             title={p.name}
             actions={
               <>
-                {p.type === 'standard' && (
+                {p.type === 'standard' && (p.barcode || p.sku) && (
+                  <Button
+                    icon={Printer}
+                    onClick={() => {
+                      try {
+                        printLabel(p);
+                      } catch (err) {
+                        toast.error('Unable to print barcode', err.message);
+                      }
+                    }}
+                  >
+                    Print barcode
+                  </Button>
+                )}
+                {p.type === 'standard' && can('products.edit') && (
                   <Button icon={SlidersHorizontal} onClick={() => setAdjusting(true)}>
                     Adjust quantity
                   </Button>
                 )}
-                <Button icon={Trash2} onClick={() => setDeleting(true)}>
-                  Delete
-                </Button>
-                <Button variant="primary" icon={Pencil} to={`/products/${p.id}/edit`}>
-                  Edit product
-                </Button>
+                {can('products.delete') && (
+                  <Button icon={Trash2} onClick={() => setDeleting(true)}>
+                    Delete
+                  </Button>
+                )}
+                {can('products.edit') && (
+                  <Button variant="primary" icon={Pencil} to={`/products/${p.id}/edit`}>
+                    Edit product
+                  </Button>
+                )}
               </>
             }
           >
@@ -109,10 +206,9 @@ export function ProductDetailPage() {
                       { label: 'Category', value: p.categoryName },
                       { label: 'Subcategory', value: p.subcategoryName },
                       { label: p.type === 'service' ? 'Service code' : 'SKU', value: p.sku },
-                      { label: 'Barcode', value: p.barcode, hidden: p.type === 'service' },
                       { label: 'Duration', value: p.durationMinutes && `${p.durationMinutes} min`, hidden: p.type !== 'service' },
                       { label: 'Serial tracking', value: p.trackSerials ? 'Each unit tracked' : 'Not tracked', hidden: p.type === 'service' },
-                      { label: 'Description', value: p.description, span: true },
+                      { label: 'Description', value: p.description },
                     ]}
                   />
                 </CardBody>
@@ -139,13 +235,14 @@ export function ProductDetailPage() {
                 <DetailList
                   columns={1}
                   items={[
-                    { label: 'Selling price', value: <span className="stat-value" style={{ fontSize: 22 }}>{formatCurrency(p.price)}</span> },
-                    { label: 'Cost price', value: formatCurrency(p.cost), hidden: p.type === 'service' },
+                    { label: 'Selling price', value: <span className="stat-value" style={{ fontSize: 22 }}>{formatCurrency(p.price)}</span>, hidden: !seePrices },
+                    { label: 'Cost price', value: formatCurrency(p.cost), hidden: p.type === 'service' || !seePrices },
                     { label: 'VAT rate', value: p.vatRate !== undefined && p.vatRate !== null ? `${p.vatRate}%` : null },
                     { label: 'Stock on hand (all warehouses)', value: formatNumber(p.stockOnHand), hidden: p.type === 'service' },
                     { label: 'Reorder level', value: formatNumber(p.reorderLevel), hidden: p.type === 'service' },
                   ]}
                 />
+                <ProductBarcode product={p} />
               </CardBody>
             </Card>
           </div>

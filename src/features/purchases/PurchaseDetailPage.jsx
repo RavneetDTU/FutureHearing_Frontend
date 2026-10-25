@@ -15,13 +15,17 @@ import {
   QueryState,
   StatusBadge,
 } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency, formatDate } from '../../utils/format';
 
 export function PurchaseDetailPage() {
   const { id } = useParams();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const { data: p, loading, error, refetch } = useApiQuery(() => purchasesApi.get(id), [id]);
   const [confirming, setConfirming] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -52,16 +56,18 @@ export function PurchaseDetailPage() {
             title={p.number}
             description={`From ${p.supplierName}`}
             actions={
-              p.status !== 'completed' && (
-                <>
+              <>
+                {(p.status !== 'completed' || user?.isAdmin) && (
                   <Button icon={Pencil} to={`/purchases/${p.id}/edit`}>
                     Edit
                   </Button>
+                )}
+                {p.status !== 'completed' && (
                   <Button variant="primary" icon={PackageCheck} onClick={() => setConfirming(true)}>
                     Mark as received
                   </Button>
-                </>
-              )
+                )}
+              </>
             }
           >
             <div style={{ marginTop: 10 }}>
@@ -86,7 +92,7 @@ export function PurchaseDetailPage() {
                   { label: 'Branch', value: p.branchName },
                   { label: 'Warehouse', value: p.warehouseName },
                   { label: 'Allocated to patient', value: p.patientId && <Link to={`/patients/${p.patientId}`}>{p.patientName}</Link> },
-                  { label: 'Total', value: formatCurrency(p.total) },
+                  { label: 'Total', value: formatCurrency(p.total), hidden: !seePrices },
                   { label: 'Units', value: p.itemCount },
                   { label: 'Notes', value: p.notes },
                 ]}
@@ -102,7 +108,7 @@ export function PurchaseDetailPage() {
                   <tr>
                     <th>Product</th>
                     <th className="text-right">Qty</th>
-                    <th className="text-right">Unit cost</th>
+                    {seePrices && <th className="text-right">Unit cost</th>}
                     <th>Serial numbers</th>
                   </tr>
                 </thead>
@@ -111,7 +117,7 @@ export function PurchaseDetailPage() {
                     <tr key={l.id}>
                       <td className="strong">{l.productName}</td>
                       <td className="text-right">{l.quantity}</td>
-                      <td className="text-right">{formatCurrency(l.unitCost)}</td>
+                      {seePrices && <td className="text-right">{formatCurrency(l.unitCost)}</td>}
                       <td>
                         {l.trackSerials ? (
                           <div className="row">

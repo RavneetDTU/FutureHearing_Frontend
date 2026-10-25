@@ -2,6 +2,12 @@ import { Link } from 'react-router-dom';
 import { EntityCell, StatusBadge } from '../ui';
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/format';
 
+/** Drop money columns when the signed-in user is not an administrator. */
+export function visibleColumns(columns, seePrices) {
+  if (seePrices) return columns;
+  return columns.filter((column) => !column.money);
+}
+
 /** Reusable column factories for DataTable configs. */
 export const col = {
   text: (key, header, extra = {}) => ({ key, header, sortable: true, ...extra }),
@@ -45,6 +51,7 @@ export const col = {
     header,
     sortable: true,
     align: 'right',
+    money: true,
     render: (r) => <span className="nowrap">{formatCurrency(r[key])}</span>,
     ...extra,
   }),

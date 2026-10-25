@@ -18,8 +18,10 @@ import {
   Tabs,
   Timeline,
 } from '../../components/ui';
+import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { useApiQuery } from '../../hooks/useApiQuery';
+import { canSeePrices } from '../../utils/access';
 import { formatCurrency, formatDate } from '../../utils/format';
 
 const STATUS_FIELDS = [
@@ -31,6 +33,8 @@ const STATUS_FIELDS = [
 export function ClaimDetailPage() {
   const { id } = useParams();
   const toast = useToast();
+  const { user } = useSession();
+  const seePrices = canSeePrices(user);
   const { data: c, loading, error, refetch } = useApiQuery(() => claimsApi.get(id), [id]);
   const [tab, setTab] = useState('timeline');
   const [updating, setUpdating] = useState(false);
@@ -68,8 +72,8 @@ export function ClaimDetailPage() {
                       { label: 'Plan', value: c.planName },
                       { label: 'Practice', value: c.practiceName },
                       { label: 'Claim date', value: formatDate(c.date) },
-                      { label: 'Claimed', value: formatCurrency(c.amount) },
-                      { label: 'Approved', value: c.approvedAmount !== null && c.approvedAmount !== undefined ? formatCurrency(c.approvedAmount) : null },
+                      { label: 'Claimed', value: formatCurrency(c.amount), hidden: !seePrices },
+                      { label: 'Approved', value: c.approvedAmount !== null && c.approvedAmount !== undefined ? formatCurrency(c.approvedAmount) : null, hidden: !seePrices },
                     ]}
                   />
                 </CardBody>
@@ -99,7 +103,7 @@ export function ClaimDetailPage() {
                       { key: 'code', header: 'Code', render: (r) => <span className="mono strong">{r.code}</span> },
                       { key: 'description', header: 'Description' },
                       { key: 'quantity', header: 'Qty', align: 'right' },
-                      { key: 'amount', header: 'Amount', align: 'right', render: (r) => formatCurrency(r.amount) },
+                      ...(seePrices ? [{ key: 'amount', header: 'Amount', align: 'right', render: (r) => formatCurrency(r.amount) }] : []),
                     ]}
                   />
                 </Card>
@@ -152,7 +156,7 @@ export function ClaimDetailPage() {
             onClose={() => setUpdating(false)}
             size="md"
             title="Update claim status"
-            fields={STATUS_FIELDS}
+            fields={seePrices ? STATUS_FIELDS : STATUS_FIELDS.filter((field) => field.type !== 'currency')}
             initialValues={{ status: c.status, approvedAmount: c.approvedAmount ?? '' }}
             submitLabel="Update status"
             onSubmit={async (values) => {

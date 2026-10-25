@@ -1,5 +1,6 @@
 import { col } from '../../components/resource/columns';
 import { ResourceListPage } from '../../components/resource/ResourceListPage';
+import { useSession } from '../../context/SessionContext';
 
 export const purchasesConfig = {
   resource: 'purchases',
@@ -8,6 +9,8 @@ export const purchasesConfig = {
   eyebrow: 'Inventory',
   description: 'Stock actually received at a branch. When a purchase is marked as received, the backend books the units into the selected warehouse.',
   permissions: { create: 'purchases.create', edit: 'purchases.edit', delete: 'purchases.edit' },
+  canEditRow: (row, user) => row.status !== 'completed' || Boolean(user?.isAdmin),
+  canDeleteRow: (row, user) => row.status !== 'completed' || Boolean(user?.isAdmin),
   createPath: '/purchases/new',
   createLabel: 'Add purchase',
   detailPath: (r) => `/purchases/${r.id}`,
@@ -32,5 +35,6 @@ export const purchasesConfig = {
 };
 
 export function PurchasesListPage() {
-  return <ResourceListPage config={purchasesConfig} />;
+  const { user } = useSession();
+  return <ResourceListPage config={{ ...purchasesConfig, allowCreate: Boolean(user?.isAdmin) }} />;
 }

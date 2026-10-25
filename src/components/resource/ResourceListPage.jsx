@@ -6,6 +6,8 @@ import { useSession } from '../../context/SessionContext';
 import { useToast } from '../../context/ToastContext';
 import { useListQuery } from '../../hooks/useListQuery';
 import { Alert, Button, Card, ConfirmDialog, DataTable, DetailList, Drawer, FilterBar, Modal, PageHeader, Pagination } from '../ui';
+import { canSeePrices } from '../../utils/access';
+import { visibleColumns } from './columns';
 import { EntityFormModal } from './EntityFormModal';
 
 /**
@@ -47,12 +49,31 @@ export function ResourceListPage({
     createPath,
     editPath,
     createLabel,
+    canEditRow,
+    canDeleteRow,
   } = config;
 
   const service = resources[resource];
   const toast = useToast();
   const navigate = useNavigate();
-  const { can } = useSession();
+  const { can, user } = useSession();
+  const seePrices = canSeePrices(user);
+  const columnsForUser = visibleColumns(columns, seePrices);
+  const fieldsForUser = seePrices
+    ? fields
+    : fields
+        .filter((field) => field.type !== 'currency' && !/price|cost/i.test(field.name ?? ''))
+        .map((field) =>
+          field.getMeta
+            ? {
+                ...field,
+                getMeta: (row) => {
+                  const meta = field.getMeta(row);
+                  return typeof meta === 'string' && /R[\s\u00a0\u202f]?\d/.test(meta) ? undefined : meta;
+                },
+              }
+            : field,
+        );
   const list = useListQuery(service.list, {
     filters: Object.fromEntries(filters.map((f) => [f.key, ''])),
     search: initialSearch,
@@ -122,15 +143,15 @@ export function ResourceListPage({
     detailPath
       ? { label: 'View', icon: Eye, to: detailPath(row) }
       : viewItems && { label: 'View', icon: Eye, onClick: () => setViewing(row) },
-    !readOnly && allowEdit && { label: 'Edit', icon: Pencil, onClick: () => openEdit(row), hidden: !can(permissions.edit) },
+    !readOnly && allowEdit && { label: 'Edit', icon: Pencil, onClick: () => openEdit(row), hidden: !can(permissions.edit) || (canEditRow && !canEditRow(row, user)) },
     ...(rowExtraActions ? rowExtraActions(row, { navigate, refetch: list.refetch, toast }) : []),
-    !readOnly && { divider: true, hidden: !can(permissions.delete) },
+    !readOnly && { divider: true, hidden: !can(permissions.delete) || (canDeleteRow && !canDeleteRow(row, user)) },
     !readOnly && {
       label: 'Delete',
       icon: Trash2,
       danger: true,
       onClick: () => setDeleting(row),
-      hidden: !can(permissions.delete),
+      hidden: !can(permissions.delete) || (canDeleteRow && !canDeleteRow(row, user)),
     },
   ].filter(Boolean);
 
@@ -164,7 +185,7 @@ export function ResourceListPage({
           {embedded && createButton && <div style={{ marginLeft: 'auto' }}>{createButton}</div>}
         </FilterBar>
         <DataTable
-          columns={columns}
+          columns={columnsForUser}
           rows={list.items}
           loading={list.loading}
           error={list.error}
@@ -191,7 +212,7 @@ export function ResourceListPage({
         open={Boolean(form)}
         loading={form?.loading}
         title={form?.mode === 'edit' ? `Edit ${singularLower}` : `Add ${singularLower}`}
-        fields={fields}
+        fields={fieldsForUser}
         initialValues={form ? toFormValues(form.record) : {}}
         record={form?.record}
         onSubmit={handleSubmit}
@@ -224,7 +245,15 @@ export function ResourceListPage({
             )
           }
         >
-          {viewing && <DetailList columns={1} items={viewItems(viewing)} />}
+          {viewing && (
+            <DetailList
+              columns={1}
+              items={viewItems(viewing).map((item) => ({
+                ...item,
+                hidden: item.hidden || (!seePrices && /price|amount|total|cost|balance|paid/i.test(item.label)),
+              }))}
+            />
+          )}
         </Drawer>
       )}
 
