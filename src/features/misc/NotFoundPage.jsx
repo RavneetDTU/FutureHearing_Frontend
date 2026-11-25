@@ -1,7 +1,6 @@
 import { Compass } from 'lucide-react';
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
-import { Button, Card, EmptyState, ErrorState } from '../../components/ui';
-
+import { Button, Card, EmptyState, ErrorState } from '../../components/ui'
 export function NotFoundPage() {
   return (
     <Card>
