@@ -12,8 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Local developer knowledge base. Not part of the application source.
-docs/
+# Local developer knowledge base. Not part of the application source
 json/
 
 # Editor directories and files
